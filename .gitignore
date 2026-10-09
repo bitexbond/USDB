@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# 备份与本地杂物
+*.bak
+*.orig
+.DS_Store
+Thumbs.db
+
+# 任何密钥/凭据都不进仓库
+.env
+.env.*
+secrets/
+*.pem
+*.key

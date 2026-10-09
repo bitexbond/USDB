@@ -1,0 +1,16 @@
+{
+  "name": "usdbond-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "USDBOND (USDB) bilingual static site with SEO/GEO optimization",
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node serve.mjs",
+    "og": "python3 tools/make-og.py",
+    "check": "node test/gateway.test.mjs && node build.mjs && node test/selfcheck.mjs"
+  },
+  "dependencies": {
+    "marked": "^18.1.0"
+  }
+}
