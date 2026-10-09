@@ -1,0 +1,20 @@
+{
+  "name": "USDBOND (USDB) — On-Chain Stable Equity",
+  "short_name": "USDBOND",
+  "description": "USDBOND (USDB) is a registered investment company share under the Investment Company Act of 1940, pegged at $1.00, with US Treasury yield airdropped daily 365 days a year.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "theme_color": "#080b11",
+  "background_color": "#080b11",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}
