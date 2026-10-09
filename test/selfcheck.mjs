@@ -132,6 +132,14 @@ async function main() {
     // 未替换的占位符
     ok(!html.includes('faq-slot-'), `${tag} 无遗留的问答占位符`);
 
+    // 容器标签必须成对 —— 少一个 </div> 会让整页布局错位，
+    // 而且浏览器不会报错，只有肉眼能看出来
+    for (const el of ['div', 'section', 'article', 'nav', 'main', 'table', 'dl']) {
+      const open = (html.match(new RegExp(`<${el}[\\s>]`, 'g')) ?? []).length;
+      const close = (html.match(new RegExp(`</${el}>`, 'g')) ?? []).length;
+      ok(open === close, `${tag} <${el}> 标签闭合 (${open} 开 / ${close} 闭)`);
+    }
+
     // 结构化数据
     const ldBlocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => m[1]);
     ok(ldBlocks.length >= 1, `${tag} 至少一段 JSON-LD`);
@@ -249,6 +257,32 @@ async function main() {
   for (const f of ['index.html', '404.html', '.nojekyll', 'manifest.webmanifest', 'favicon.svg', '_headers']) {
     ok(exists(path.join(DIST, f)), `dist/${f} 存在`);
   }
+
+  /* ------------------------------------------------------------ 样式完整性 */
+  group('样式完整性');
+
+  const css = await read(path.join(DIST, 'assets/main.css'));
+  ok(css.length > 5000, `CSS 体量正常 (${css.length} 字节)`);
+
+  // var() 写错一个字母不会报错，只是静默失效 —— 这类问题在 HTML 断言里看不见
+  const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
+  const used = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]));
+  const missingVars = [...used].filter((v) => !defined.has(v));
+  ok(missingVars.length === 0, '所有 var() 引用的自定义属性都已定义', `未定义：${missingVars.join(', ')}`);
+
+  const openBraces = (css.match(/\{/g) ?? []).length;
+  const closeBraces = (css.match(/\}/g) ?? []).length;
+  ok(openBraces === closeBraces, `CSS 花括号平衡 (${openBraces} vs ${closeBraces})`);
+
+  ok(/@media \(prefers-color-scheme: light\)/.test(css), 'CSS 提供了浅色主题');
+  ok(/@media \(prefers-reduced-motion: reduce\)/.test(css), 'CSS 尊重减少动效偏好');
+  ok(/@media print/.test(css), 'CSS 提供打印样式');
+  ok(/:focus-visible/.test(css), 'CSS 保留可见的键盘焦点样式');
+
+  // 未闭合的注释会吞掉后面所有规则
+  const commentOpens = (css.match(/\/\*/g) ?? []).length;
+  const commentCloses = (css.match(/\*\//g) ?? []).length;
+  ok(commentOpens === commentCloses, `CSS 注释闭合 (${commentOpens} vs ${commentCloses})`);
 
   /* ------------------------------------------------------ 无开发机信息泄漏 */
   group('交付卫生（不泄漏本机信息）');
