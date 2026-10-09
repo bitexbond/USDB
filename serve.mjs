@@ -66,7 +66,7 @@ async function resolveTarget(urlPath) {
   }
 }
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   const target = await resolveTarget(req.url || '/');
   if (!target) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -83,6 +83,20 @@ createServer(async (req, res) => {
     'X-Content-Type-Options': 'nosniff',
   });
   createReadStream(target).pipe(res);
-}).listen(PORT, HOST, () => {
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `\n端口 ${PORT} 已被占用。可能是上一次的预览服务还在跑。\n\n` +
+        `  换端口：   PORT=8080 npm run serve\n` +
+        `  结束占用： lsof -ti :${PORT} | xargs kill\n`,
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+
+server.listen(PORT, HOST, () => {
   console.log(`\n  USDBOND 预览：http://${HOST}:${PORT}/\n  语言网关 → /zh/ 或 /en/\n`);
 });

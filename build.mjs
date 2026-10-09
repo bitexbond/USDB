@@ -206,7 +206,27 @@ function jsonLdFor({ locale, slug, fm, faqs, title, description, updated, pageUr
   const crumbsId = `${pageUrl}#breadcrumb`;
   const lang = locale === 'zh' ? 'zh-Hans' : 'en';
 
+  const inc = site.incubator;
+  const incubatorId = inc ? `${absUrl('/')}#incubator` : null;
+
   const graph = [
+    // 孵化方作为独立实体建节点，用 parentOrganization 关联而不是把 BitEX 的
+    // 信息塞进 USDBOND 节点 —— 这样两个实体在知识图谱里各自可被消歧，
+    // 且"孵化"不会被误读为"运营方"。
+    ...(inc
+      ? [
+          {
+            '@type': 'Organization',
+            '@id': incubatorId,
+            name: inc.name,
+            legalName: inc.legalName,
+            url: inc.url,
+            logo: { '@type': 'ImageObject', url: inc.logo },
+            description: `${inc.name} — ${inc.tagline.en}`,
+            sameAs: inc.sameAs,
+          },
+        ]
+      : []),
     {
       '@type': 'Organization',
       '@id': orgId,
@@ -216,6 +236,7 @@ function jsonLdFor({ locale, slug, fm, faqs, title, description, updated, pageUr
       url: absUrl('/'),
       logo: { '@type': 'ImageObject', url: absUrl('/favicon.svg') },
       description: site.description[locale],
+      ...(inc ? { parentOrganization: { '@id': incubatorId } } : {}),
       ...(site.email ? { email: site.email } : {}),
       ...(site.sameAs?.length ? { sameAs: site.sameAs } : {}),
     },
@@ -365,6 +386,8 @@ function llmsTxt(entries) {
     return `## ${heading}\n\n${rows.join('\n')}`;
   };
 
+  const inc = site.incubator;
+
   return `# ${site.name} (${site.token})
 
 > ${site.description.zh}
@@ -380,6 +403,14 @@ from reserve spread.
 Key figures: constant NAV $1.00 · airdrop 365 days/year · net yield ~3.35% (3.5% Treasury yield less
 0.15% management fee) · government securities \u2265 99.5% of assets · WAM \u2264 60 days · WAL \u2264 120 days ·
 snapshot daily at 00:00 UTC · planned chains Ethereum, Solana, Polygon, Base.
+${
+  inc
+    ? `
+Incubated by ${inc.name} (${inc.url}), operated by ${inc.legalName}. The incubation relationship is
+separate from the issuer of the USDBOND fund and does not constitute issuance, redemption, a
+guarantee, an endorsement, or investment advice in respect of USDB.`
+    : ''
+}
 
 ${section('zh', '中文内容')}
 
@@ -389,7 +420,7 @@ ${section('en', 'English content')}
 
 - [Full content, single file](${absUrl('/llms-full.txt')}): every page of this site as plain Markdown
 - [Sitemap](${absUrl('/sitemap.xml')})
-- [Whitepaper in Markdown](${absUrl('/en/whitepaper.md')})
+- [Whitepaper in Markdown](${absUrl('/en/whitepaper.md')})${inc ? `\n- [${inc.name}](${inc.url}): incubating organisation` : ''}
 `;
 }
 
@@ -503,6 +534,24 @@ async function main() {
         url: absUrl('/'),
         name: `${site.name} (${site.token})`,
         inLanguage: ['zh-Hans', 'en'],
+        ...(site.incubator
+          ? {
+              publisher: {
+                '@type': 'Organization',
+                '@id': `${absUrl('/')}#organization`,
+                name: site.name,
+                url: absUrl('/'),
+                parentOrganization: {
+                  '@type': 'Organization',
+                  '@id': `${absUrl('/')}#incubator`,
+                  name: site.incubator.name,
+                  legalName: site.incubator.legalName,
+                  url: site.incubator.url,
+                  sameAs: site.incubator.sameAs,
+                },
+              },
+            }
+          : {}),
       },
     ],
   };

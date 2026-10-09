@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+# GitHub Pages 走 artifact 部署，所以 dist/ 不需要提交 —— 这里现场构建。
+# 每次发布前会先跑完整自检（网关分流测试 + 1179 项产物断言），
+# 元数据或结构化数据坏了会直接挡住发布，而不是静默上线一个坏站点。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  # 权威域名。改这里即可整体切换，无需改 site.config.mjs
+  SITE_URL: https://usdb.bitex.bond
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 自检并构建
+        run: npm run check
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

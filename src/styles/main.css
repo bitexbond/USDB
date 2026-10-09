@@ -328,6 +328,61 @@ svg {
   color: var(--accent);
 }
 
+/* ------------------------------------------------------------- 孵化关系条 */
+
+.incubator-bar {
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-elev);
+}
+
+.incubator-bar__inner {
+  display: flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding-block: 0.3rem;
+}
+
+.incubator-bar__text {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  letter-spacing: 0.01em;
+}
+
+.incubator-bar__text a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-line);
+  transition: border-color 0.15s;
+}
+
+.incubator-bar__text a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.incubator-note {
+  max-width: 78ch;
+  margin: 0 0 1.5rem;
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: var(--fg-muted);
+  opacity: 0.9;
+}
+
+.gateway__incubator {
+  margin: 2.5rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+}
+
+.gateway__incubator a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 /* --------------------------------------------------------------- 页面头 */
 
 .page {

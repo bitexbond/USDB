@@ -260,7 +260,8 @@ def main():
     if not CJK_OK:
         print("⚠  未找到中文字体，中文 OG 图会退化为英文排版")
 
-    footer = os.environ.get("SITE_URL", "usdbond.example").replace("https://", "").replace("http://", "").rstrip("/")
+    host = os.environ.get("SITE_URL", "https://usdb.bitex.bond").replace("https://", "").replace("http://", "").rstrip("/")
+    footer = f"Incubated by BitEX  ·  {host}"
 
     n = 0
     overflows = []

@@ -37,6 +37,25 @@ function navHtml(locale, currentSlug, t) {
     .join('\n          ');
 }
 
+/**
+ * 孵化关系条。放在页头之上而不是导航里：它表达的是归属关系，
+ * 不该和站点自身的导航抢注意力，但必须在首屏可见。
+ */
+function incubatorBar(locale) {
+  const inc = site.incubator;
+  if (!inc) return '';
+  const shown = inc.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  return `<div class="incubator-bar">
+  <div class="wrap incubator-bar__inner">
+    <p class="incubator-bar__text">
+      <span aria-hidden="true">◆</span>
+      ${esc(inc.statement[locale])}
+      <a href="${inc.url}" rel="noopener">${esc(inc.name)} · ${esc(shown)}</a>
+    </p>
+  </div>
+</div>`;
+}
+
 function head({ locale, slug, fm, title, description, ogImage, jsonLd, mdPath }) {
   const t = ui[locale];
   const other = otherLocale(locale);
@@ -146,6 +165,7 @@ ${head({ locale, slug, fm, title, description, ogImage, jsonLd, mdPath })}
 <body>
 <a class="skip" href="#main">${esc(t.skipToContent)}</a>
 
+${incubatorBar(locale)}
 <header class="site-header">
   <div class="wrap site-header__inner">
     <a class="brand" href="${pathFor(locale, 'index')}">
@@ -193,6 +213,7 @@ ${bodyHtml}
       </ul>
     </nav>
     <p class="disclaimer">${esc(t.disclaimer)}</p>
+    ${site.incubator ? `<p class="incubator-note">${esc(t.incubatorNote)}</p>` : ''}
     <p class="copyright">© ${new Date(site.defaultUpdated).getUTCFullYear()} ${esc(site.copyright)} <a href="${pathFor(other, slug)}" hreflang="${other}" data-lang="${other}">${esc(t.switchTo)}</a></p>
   </div>
 </footer>
@@ -264,6 +285,11 @@ ${JSON.stringify(jsonLd, null, 2)}
           ${links}
       </ul>
     </nav>
+    ${
+      site.incubator
+        ? `<p class="gateway__incubator">${esc(site.incubator.statement.zh)} / ${esc(site.incubator.statement.en)} · <a href="${site.incubator.url}" rel="noopener">${esc(site.incubator.name)}</a></p>`
+        : ''
+    }
   </div>
 </main>
 </body>

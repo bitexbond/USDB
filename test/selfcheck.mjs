@@ -132,6 +132,17 @@ async function main() {
     // 未替换的占位符
     ok(!html.includes('faq-slot-'), `${tag} 无遗留的问答占位符`);
 
+    // 孵化关系必须在页面肉眼可见，不能只存在于结构化数据里
+    if (site.incubator) {
+      ok(html.includes('class="incubator-bar"'), `${tag} 首屏有孵化关系条`);
+      ok(
+        html.includes(`href="${site.incubator.url}" rel="noopener"`),
+        `${tag} 孵化关系条链回 ${site.incubator.name}`,
+      );
+      ok(html.includes(site.incubator.statement[pf.locale]), `${tag} 孵化措辞与语言一致`);
+      ok(html.includes('class="incubator-note"'), `${tag} 页脚有孵化关系声明`);
+    }
+
     // 容器标签必须成对 —— 少一个 </div> 会让整页布局错位，
     // 而且浏览器不会报错，只有肉眼能看出来
     for (const el of ['div', 'section', 'article', 'nav', 'main', 'table', 'dl']) {
@@ -167,7 +178,26 @@ async function main() {
       }
       ok(!!graph.find((n) => n['@id'] === `${site.siteUrl}/#fund`), `${tag} @graph 含 InvestmentFund 实体`);
       ok(!!graph.find((n) => String(n['@type']).includes('BreadcrumbList')), `${tag} @graph 含 BreadcrumbList`);
-      ok(!!graph.find((n) => n['@type'] === 'Organization'), `${tag} @graph 含 Organization`);
+
+      const orgNode = graph.find((n) => String(n['@type']).includes('Organization') && n['@id'] === `${site.siteUrl}/#organization`);
+      ok(!!orgNode, `${tag} @graph 含 Organization`);
+
+      // 孵化关系必须是"两个独立实体 + parentOrganization 关联"，
+      // 不能把孵化方的账号挂到 USDBOND 节点上冒充自建渠道
+      if (site.incubator) {
+        const incNode = graph.find((n) => n['@id'] === `${site.siteUrl}/#incubator`);
+        if (ok(!!incNode, `${tag} @graph 含孵化方独立实体`)) {
+          ok(incNode.name === site.incubator.name, `${tag} 孵化方实体名称正确`);
+          ok(incNode.url === site.incubator.url, `${tag} 孵化方实体 URL 正确`);
+          ok(Array.isArray(incNode.sameAs) && incNode.sameAs.length > 0, `${tag} 孵化方实体带 sameAs`);
+        }
+        ok(
+          orgNode?.parentOrganization?.['@id'] === `${site.siteUrl}/#incubator`,
+          `${tag} USDBOND 通过 parentOrganization 关联孵化方`,
+        );
+        // USDBOND 尚无自建渠道，不应冒用孵化方账号
+        ok(!orgNode?.sameAs || orgNode.sameAs.length === 0, `${tag} USDBOND 未冒用孵化方社交账号`);
+      }
     }
 
     // FAQPage 与页面内问答数量一致
@@ -256,6 +286,28 @@ async function main() {
 
   for (const f of ['index.html', '404.html', '.nojekyll', 'manifest.webmanifest', 'favicon.svg', '_headers']) {
     ok(exists(path.join(DIST, f)), `dist/${f} 存在`);
+  }
+
+  /* ------------------------------------------------------------ 托管配置 */
+  group('托管配置');
+
+  // GitHub Pages 用 CNAME 绑定自定义域；写错会静默回落到 *.github.io
+  const cname = exists(path.join(DIST, 'CNAME')) ? (await read(path.join(DIST, 'CNAME'))).trim() : '';
+  const host = site.siteUrl.replace(/^https?:\/\//, '');
+  ok(!!cname, 'dist/CNAME 存在（GitHub Pages 自定义域）');
+  ok(cname === host, `CNAME 与 siteUrl 主机名一致`, `CNAME=${cname} siteUrl 主机名=${host}`);
+
+  // 站点地图与 llms.txt 里的绝对 URL 必须都是目标域名，不能混入旧域名
+  for (const f of ['sitemap.xml', 'robots.txt', 'llms.txt']) {
+    const text = await read(path.join(DIST, f));
+    const stale = [...text.matchAll(/https?:\/\/[a-z0-9.-]*\.(example|github\.io)\b/gi)].map((m) => m[0]);
+    ok(stale.length === 0, `${f} 未残留占位或回退域名`, stale.slice(0, 3).join(', '));
+  }
+
+  if (site.incubator) {
+    const llms = await read(path.join(DIST, 'llms.txt'));
+    ok(llms.includes(site.incubator.name), 'llms.txt 声明了孵化方');
+    ok(llms.includes(site.incubator.url), 'llms.txt 链回孵化方官网');
   }
 
   /* ------------------------------------------------------------ 样式完整性 */
